@@ -146,9 +146,15 @@ function setColor(population){
 //     }
 // }).addTo(map);
 
-L.geoJSON("majorAirports.json", {
-    onEachFeature: function(feature, layer) {
-        console.log(feature)
-        return layer.bindPopup("<h2>" + feature.properties.name + "</h2><br><h4>" + feature.properties.city + ", " + feature.properties.country + "</h4>")
-    }
-}).addTo(map);
+var data = "https://raw.githubusercontent.com/NABUCH63/Mapping_Earthquakes/tree/master/Static/JS/majorAirports.json";
+
+d3.json(data).then(function(data) {
+    console.log(data)
+    L.geoJSON(data).addTo(map);
+})
+// L.geoJSON(data, {
+//     onEachFeature: function(feature, layer) {
+//         console.log(feature)
+//         return layer.bindPopup("<h2>" + feature.properties.name + "</h2><br><h4>" + feature.properties.city + ", " + feature.properties.country + "</h4>")
+//     }
+// }).addTo(map);
