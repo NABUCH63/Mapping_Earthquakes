@@ -6,23 +6,38 @@
 //     center: [37.7749, -122.4194],
 //     zoom: 13
 // });
-var map = L.map("map", {
-    center: [30, 30],
-    zoom: 2
-});
+
 
 // Add a tile layer (the background map image) to our map
 // We use the addTo method to add objects to our map
 
-L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+let street = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
     maxZoom: 18,
     id: 'mapbox/streets-v11',
     tileSize: 512,
     zoomOffset: -1,
     accessToken: API_KEY
-}).addTo(map);
+});
 
+let dark = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: 'Map data © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery (c) <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    accessToken: API_KEY
+});
+
+var basemaps = {
+    "Street": street,
+    "Dark": dark
+};
+
+var map = L.map("map", {
+    center: [40.7, -94.5],
+    zoom: 4,
+    layers: [street]
+});
+
+L.control.layers(basemaps).addTo(map);
 
 // var cities = [
 //     {
@@ -146,11 +161,18 @@ function setColor(population){
 //     }
 // }).addTo(map);
 
-var data = "https://raw.githubusercontent.com/NABUCH63/Mapping_Earthquakes/tree/master/Static/JS/majorAirports.json";
+var data = "https://raw.githubusercontent.com/NABUCH63/Mapping_Earthquakes/master/majorAirports.json";
 
 d3.json(data).then(function(data) {
-    console.log(data)
-    L.geoJSON(data).addTo(map);
+    console.log(data);
+    L.geoJSON(data, {
+        onEachFeature: function(feature, layer) {
+            console.log(feature)
+            return layer.bindPopup(feature.properties.name)
+        }
+    }).addTo(map);
+
+
 })
 // L.geoJSON(data, {
 //     onEachFeature: function(feature, layer) {
