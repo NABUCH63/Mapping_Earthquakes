@@ -1,17 +1,14 @@
-// Create our initial map object
-// Set the longitude, latitude, and the starting zoom level
-// var map = L.map('map').setView([51.505, -0.09], 13);
+// Create a base layer that holds both maps.
+let satelliteStreets = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox/satellite-streets-v11',
+    tileSize: 512,
+    zoomOffset: -1,
+    accessToken: API_KEY
+});
 
-// var map = L.map("map", {
-//     center: [37.7749, -122.4194],
-//     zoom: 13
-// });
-
-
-// Add a tile layer (the background map image) to our map
-// We use the addTo method to add objects to our map
-
-let street = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+let streets = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
     attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
     maxZoom: 18,
     id: 'mapbox/streets-v11',
@@ -20,163 +17,160 @@ let street = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y
     accessToken: API_KEY
 });
 
-let dark = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles/{z}/{x}/{y}?access_token={accessToken}', {
-    attribution: 'Map data © <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery (c) <a href="https://www.mapbox.com/">Mapbox</a>',
+let navNight = L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
     maxZoom: 18,
+    id: 'mapbox/navigation-night-v1',
+    tileSize: 512,
+    zoomOffset: -1,
     accessToken: API_KEY
 });
 
-var basemaps = {
-    "Street": street,
-    "Dark": dark
-};
+let baseMaps = {
+    "Streets": streets,
+    "Satellite": satelliteStreets,
+    "Navigation Night": navNight
+  };
 
-var map = L.map("map", {
-    center: [40.7, -94.5],
-    zoom: 4,
-    layers: [street]
+  var map = L.map("map", {
+    center: [44, -80],
+    zoom: 2,
+    layers: [streets]
 });
 
-L.control.layers(basemaps).addTo(map);
+// SET API URLS
+var earthquakesAPI = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+var tectonicPlates = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json";
+var majorEarthquakes = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson"
 
-// var cities = [
-//     {
-//         location: [40.7128, -74.0059],
-//         name: "New York",
-//         population: 8550405
-//     },
-//     {
-//         location: [34.0522, -118.2437],
-//         name: "Los Angeles",
-//         population: 3967000
-//     },
-//     {
-//         location: [29.7604, -95.3698],
-//         name: "Houston",
-//         population: 2310405
-//     },
-//     {
-//         location: [41.2565, -95.9345],
-//         name: "Omaha",
-//         population: 475405
-//     },
-//     {
-//         location: [41.8781, -87.6298],
-//         name: "Chicago",
-//         population: 2710405
-//     },
-//  ];
+// create function to size radius based on magnitude
+function getRadius(magnitude) {
+    if (magnitude === 0) {
+        return 1;
+    }
+    return magnitude * 4;
+};
 
-// cities.forEach(city => {
-//     L.marker(city.location, {
-//         title: city.name,
-//         draggable: true
-//     })
-//     .bindPopup("<h2>"+city.name+"</h2><hr>"+city.population)
-//     .addTo(map);
-// });
-
-function setSize(population){
-    return population/40;
-}
-function setColor(population){
-    if(population>5000000) color="red";
-    else if (population>1000000) color="blue";
-    else color="green";
-    return color;
+// Create Color Function
+function getColor(magnitude) {
+    if (magnitude >=6) {
+        return "#000000";
+    }
+    if (magnitude > 5) {
+    return "#ea2c2c";
+    }
+    if (magnitude > 4) {
+    return "#ea822c";
+    }
+    if (magnitude > 3) {
+    return "#ee9c00";
+    }
+    if (magnitude > 2) {
+    return "#eecc00";
+    }
+    if (magnitude > 1) {
+    return "#d4ee00";
+    }
+    return "#98ee00";
 }
 
-// cities.forEach(city => {
-//     L.circle(city.location, {
-//         title: city.name,
-//         color: setColor(city.population),
-//         fillColor: setColor(city.population),
-//         fillOpacity: 0.5,
-//         radius: setSize(city.population)
-//     })
-//     .bindPopup("<h2>"+city.name+"</h2><hr>"+city.population)
-//     .addTo(map);
-// });
+// create function to define styling of earthquake marker using setRadius function
+function styleInfo1(feature) {
+    return {
+        opacity: 1,
+        fillOpacity: 1,
+        fillColor: getColor(feature.properties.mag),
+        color: "#000000",
+        radius: getRadius(feature.properties.mag),
+        stroke: true,
+        weight: 0.5
+    };
+};
 
-// line = [
-//     [40.7128, -74.0059],
-//     [34.0522, -118.2437],
-//     [29.7604, -95.3698],
-//     [41.2565, -95.9345],
-//     [41.8781, -87.6298]
-// ]
-// L.polyline(line, {
-//     color: "red",
-//     dashArray: '4',
-//     dashOffest: '0'
-// }).addTo(map)
-//  //  * 
-//  * 
-//  * 
-//  * 
-// var myMarker = L.marker([37.771187541195175, -122.46889397973125], {
-//     title: "de Young Museum",
-//     draggable: true
-// });
+// Create function for plates styling
+function styleInfo2(feature) {
+    return {
+        opacity: 1,
+        color: "hotpink",
+        borderColor: "black",
+        stroke: true,
+        weight: 1.5
+    };
+};
 
-// myMarker.addTo(map);
-// myMarker.bindPopup("<h2>de Young Museum</h2><hr>"
-// +"<img style='max-width:100px;' src='https://tpc.googlesyndication.com/simgad/11593611388415292311'>"
-// +"    <p>asdfafsd asfdsfasdf sdfazsdf sdf </p>");
+// ADD EARTHQUAKE DATA
+d3.json(earthquakesAPI).then(function(earthquakesAPI) {
+    L.geoJSON(earthquakesAPI, {
+        pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng).bindPopup("<h5>Location: " + feature.properties.place + "<hr> Magintude: " + feature.properties.mag + "</h5>")
+            },
+        style: styleInfo1
+    }).addTo(allearthquakes);
+});
+
+d3.json(majorEarthquakes).then(function(majorEarthquakes) {
+    L.geoJSON(majorEarthquakes, {
+        pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng).bindPopup("<h5>Location: " + feature.properties.place + "<hr> Magintude: " + feature.properties.mag + "</h5>")
+            },
+        style: styleInfo1
+    }).addTo(majorquakes);
+});
+
+// ADD TECTONIC PLATES DATA
+d3.json(tectonicPlates).then(function(tectonicPlates) {
+    L.geoJSON(tectonicPlates, {
+        pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng)
+            },
+        style: styleInfo2
+    }).addTo(plates);
+});
+
+var allearthquakes = new L.LayerGroup();
+var majorquakes = new L.LayerGroup();
+var plates = new L.LayerGroup();
+
+allearthquakes.addTo(map);
+majorquakes.addTo(map);
+plates.addTo(map);
+
+var overlays = {
+    "All Earthquakes": allearthquakes,
+    "Major Earthquakes": majorquakes,
+    "Tectonic Plates": plates
+};
+
+L.control.layers(baseMaps, overlays).addTo(map);
+
+// create legend control object
+
+var legend = L.control({
+    position: "bottomright"
+});
+
+legend.onAdd = function() {
+    let div = L.DomUtil.create("div", "info legend");
 
 
-// var myMarker = L.marker([37.77050907812584, -122.44711444364579], {
-//     title: "de Young Museum",
-//     draggable: true
-// });
+    const magnitudes = [0,1,2,3,4,5,6];
+    const colors = [ 
+        "#98ee00",
+        "#d4ee00",
+        "#eecc00",
+        "#ee9c00",
+        "#ea822c",
+        "#ea2c2c",
+        "#000000",
+    ];
 
-// myMarker.addTo(map);
-// myMarker.bindPopup("<h2>Burton San Francisco Flagship Store</h2><hr>"
-// +"<img style='max-width:100px;' src='https://lh5.googleusercontent.com/p/AF1QipMXu1JRkDvmHGqj-hK4YVr2OvuJdVNFj7_FIS5J=w408-h408-k-no'>"
-// +"    <p>asdfafsd asfdsfasdf sdfazsdf sdf </p>");
-
-// let sanFranAirport =
-// {"type":"FeatureCollection","features":[{
-//     "type":"Feature",
-//     "properties":{
-//         "id":"3469",
-//         "name":"San Francisco International Airport",
-//         "city":"San Francisco",
-//         "country":"United States",
-//         "faa":"SFO",
-//         "icao":"KSFO",
-//         "alt":"13",
-//         "tz-offset":"-8",
-//         "dst":"A",
-//         "tz":"America/Los_Angeles"},
-//         "geometry":{
-//             "type":"Point",
-//             "coordinates":[-122.375,37.61899948120117]}}
-// ]};
-
-// L.geoJSON(sanFranAirport, {
-//     pointToLayer: function(feature, latlng) {
-//         console.log(feature)
-//         return L.marker(latlng).bindPopup("<h2>" + feature.properties.name + "</h2><br><h4>" + feature.properties.city + ", " + feature.properties.country + "</h4>")
-//     }
-// }).addTo(map);
-
-var data = "https://raw.githubusercontent.com/NABUCH63/Mapping_Earthquakes/master/majorAirports.json";
-
-d3.json(data).then(function(data) {
-    console.log(data);
-    L.geoJSON(data, {
-        onEachFeature: function(feature, layer) {
-            console.log(feature)
-            return layer.bindPopup(feature.properties.name)
+    for (var i = 0; i < magnitudes.length; i++) {
+        div.innerHTML +=
+            "<i style='background: " + colors[i] + "'></i> " +
+            magnitudes[i] + (magnitudes[i + 1] ? "&ndash;" + magnitudes[i + 1] + "<br>" : "+");
         }
-    }).addTo(map);
+    return div;
+};
 
+legend.addTo(map)
 
-})
-// L.geoJSON(data, {
-//     onEachFeature: function(feature, layer) {
-//         console.log(feature)
-//         return layer.bindPopup("<h2>" + feature.properties.name + "</h2><br><h4>" + feature.properties.city + ", " + feature.properties.country + "</h4>")
-//     }
-// }).addTo(map);
